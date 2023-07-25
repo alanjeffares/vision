@@ -30,7 +30,6 @@ def train_one_epoch(model, criterion, optimizer, data_loader, device, epoch, arg
             output = model(image)
             loss = criterion(output, target)
 
-        optimizer.zero_grad()
         if scaler is not None:
             scaler.scale(loss).backward()
             if args.clip_grad_norm is not None:
@@ -43,7 +42,9 @@ def train_one_epoch(model, criterion, optimizer, data_loader, device, epoch, arg
             loss.backward()
             if args.clip_grad_norm is not None:
                 nn.utils.clip_grad_norm_(model.parameters(), args.clip_grad_norm)
-            optimizer.step()
+            if (i + 1) % 8 == 0:  # every 8th batch apply bp
+                optimizer.step()
+                optimizer.zero_grad()
 
         if model_ema and i % args.model_ema_steps == 0:
             model_ema.update_parameters(model)
